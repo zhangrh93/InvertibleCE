@@ -5,26 +5,17 @@ from ModelWrapper import *
 from ChannelReducer import ChannelReducer, ClusterReducer
 import os
 import pickle
-import ipywidgets as widgets
-from ipywidgets import interact
-import itertools
 
 import graphviz
 import pydotplus
-from IPython.display import Image, display
 
 import scipy
-import keras
-from keras import backend as K
 
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import time
 
-import keras.backend.tensorflow_backend as KTF
-import tensorflow as tf
-from tensorflow.keras.backend import resize_images
 
 FONT_SIZE = 30
 CALC_LIMIT = 1e8
@@ -113,8 +104,8 @@ class Explainer():
     def _train_reducer(self,model,classesLoader):
         X_feature = []
 
-        print ("training reducer:")
-        print ("loading data")
+        print ("Training reducer:")
+        print ("Loading data")
 
         if self.reducer is None:
             if self.reducer_type == "Cluster":
@@ -127,7 +118,7 @@ class Explainer():
                             reducers = pickle.load(f)
                         if self.n_components in reducers:
                             self.reducer = reducers[self.n_components]['reducer']
-                            print ("reducer loaded")
+                            print ("Reducer loaded")
                             
                 if self.reducer is None:
                     self.reducer = ChannelReducer(n_components = self.n_components)
@@ -148,11 +139,13 @@ class Explainer():
             nX_feature = X_feature_f
             if total > CALC_LIMIT:
                 p = CALC_LIMIT / total
-                print ("dataset too big, train with {:.2f} instances".format(p))
+                print ("Dataset too big, train with {:.2f} instances".format(p))
                 idx = np.random.choice(l,int(l*p),replace = False)
                 nX_feature = nX_feature[idx]
 
-            print ("loading complete, with size of {}".format(nX_feature.shape))
+            print ("Loading complete, with size of {}".format(nX_feature.shape))
+            
+            print ("Training will take around a minute, please wait for a while...".format(nX_feature.shape))
             start_time = time.time()
             nX = self.reducer.fit(nX_feature)
 
@@ -167,10 +160,8 @@ class Explainer():
 
         err = []
         for i in range(len(self.classesNos)):
-            #print (X_feature[0].shape)
-            #print (model.target_predict(X_feature[i],layer_name=self.layer_name).shape)
-            res_true = model.target_predict(X_feature[i],layer_name=self.layer_name)[:,i] #
-            res_recon = model.target_predict(reX[i],layer_name=self.layer_name)[:,i] #
+            res_true = model.target_predict(X_feature[i],layer_name=self.layer_name)[:,i]
+            res_recon = model.target_predict(reX[i],layer_name=self.layer_name)[:,i]
             err.append(abs(res_true-res_recon).mean(axis=0) / res_true.mean(axis=0))
 
 

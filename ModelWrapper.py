@@ -9,7 +9,6 @@
 import numpy as np
 import os
 import torch
-from keras import backend as K
 from ClassesLoader import *
 
 class ModelWrapper:
@@ -17,6 +16,9 @@ class ModelWrapper:
         self.model = model
         self.batch_size = batch_size
     def get_feature(self,x,layer_name):
+        '''
+        get feature map from a given layer
+        '''
         pass
     def feature_predict(self,feature,layer_name = None):
         pass  
@@ -25,160 +27,6 @@ class ModelWrapper:
     def target_value(self,x):
         pass
     
-class KerasModelWrapper(ModelWrapper):
-    def __init__(self,
-                 model,
-                 layer_dict = {},
-                 target = None,
-                 channel_last = False,
-                 input_size = [224, 224, 3],
-                 batch_size=128):#target: (layer_name,unit_nums)
-        self.layer_dict = layer_dict
-        self.target = target
-        self.channel_last = channel_last
-        self.input_size = list(input_size)
-
-        super().__init__(model,batch_size)
-        
-    def _batch_fn(self,x,fn):
-        batch_size = self.batch_size
-        l = x.shape[0]
-        it_num = l // batch_size
-        res = []
-        fr = 0
-        to = 0
-        for i in range(it_num):
-            fr = i*batch_size
-            to = (i+1)*batch_size
-            res.append(fn([x[fr:to]])[0])
-        res.append(fn([x[to:]])[0])
-        res = np.concatenate(res)
-        return res
-            
-    def get_feature(self,x,layer_name = None):
-        if layer_name == None:
-            return self.model.predict(x)
-        output = self.model.get_layer(layer_name).output
-        fn = K.function([self.model.input],[output])
-        
-        features = self._batch_fn(x,fn)
-        return features
-
-    def feature_predict(self,feature,layer_name = None): 
-        if layer_name == None:
-            return self.model.predict(feature)
-        output = self.model.get_layer(layer_name).output
-        fo = K.function([output],[self.model.output])
-        
-        pred = self._batch_fn(feature,fo)
-        return pred
-
-    def target_predict(self,feature,layer_name = None):        
-
-        if self.target is None:
-            print ("No target")
-            return None
-        if layer_name =="input":
-            finput = self.model.input
-        else:
-            finput = self.model.get_layer(layer_name).output
-
-        target_layer,unit = self.target
-
-        if target_layer == "output":
-            output = self.model.layers[-1].input
-            w,b = self.model.layers[-1].get_weights()
-
-            fo = K.function([finput],[output])
-            
-            pred = self._batch_fn(feature,fo)
-
-            pred = np.dot(pred,w)+b
-
-        else:
-            output = self.model.get_layer(target_layer).output
-            fo = K.function([finput],[output])
-            
-            pred = self._batch_fn(feature,fo)
-
-        return pred[...,unit]
-    
-    def predict(self,x):
-        return self.model.predict(x)
-
-
-class Keras2ModelWrapper(ModelWrapper):
-    def __init__(self,
-                 model,
-                 layer_dict = {},
-                 target = None,
-                 channel_last = False,
-                 input_size = [224, 224, 3],
-                 batch_size=128):#target: (layer_name,unit_nums)
-        self.layer_dict = layer_dict
-        self.target = target
-        self.channel_last = channel_last
-        self.input_size = list(input_size)
-
-        
-        super().__init__(model,batch_size)
-        
-    def _batch_fn(self,x,fn):
-        batch_size = self.batch_size
-        l = x.shape[0]
-        it_num = l // batch_size
-        res = []
-        fr = 0
-        to = 0
-        for i in range(it_num):
-            fr = i*batch_size
-            to = (i+1)*batch_size
-            res.append(fn([x[fr:to]])[0])
-        res.append(fn([x[to:]])[0])
-        res = np.concatenate(res)
-        return res
-            
-    def get_feature(self,x,layer_name = None):
-        if layer_name == None:
-            return self.model.predict(x)
-        output = self.model.get_layer(layer_name).output
-        fn = K.function([self.model.input],[output])
-        
-        features = self._batch_fn(x,fn)
-        return features
-
-    def feature_predict(self,feature,layer_name= None): 
-        layer_name,unit = self.target
-        if layer_name == None:
-            return self.model.predict(feature)
-        output = self.model.get_layer(layer_name).output
-        fo = K.function([output],[self.model.output])
-        
-        pred = self._batch_fn(feature,fo)
-        return pred
-
-    def target_predict(self,feature,layer_name = None):        
-
-        if self.target is None:
-            print ("No target")
-            return None
-        if layer_name =="input":
-            finput = self.model.input
-        else:
-            finput = self.model.get_layer(layer_name).output
-
-        target_layer,unit = self.target
-
-        output = self.model.get_layer(target_layer).output
-        fo = K.function([finput],[output])
-        
-        pred = self._batch_fn(feature,fo)
-
-        return pred[...,unit]
-    
-    def predict(self,x):
-        return self.model.predict(x)
-
 
 class PytorchModelWrapper(ModelWrapper):   
     def __init__(self,
@@ -223,7 +71,7 @@ class PytorchModelWrapper(ModelWrapper):
         return x
 
     def _fun(self,x,layer_in = "input",layer_out = "output"):
-        #cpu in cpu out
+        #tensor cpu in cpu out
 
         x = x.type(torch.FloatTensor)
 
@@ -258,7 +106,6 @@ class PytorchModelWrapper(ModelWrapper):
             nx = nx.cuda()
             
         with torch.no_grad():
-            #print (nx.sum())
             ny = self.model(nx)
 
         #print(data_out)

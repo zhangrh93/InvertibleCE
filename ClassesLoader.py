@@ -9,25 +9,22 @@ from PIL import Image
 import numpy as np
 import os
 from tqdm import tqdm
-import keras
-from keras.preprocessing import image
 from torchvision import transforms
 import torch
 
+import torchvision.datasets as dset
 
 class DataLoader():
+    def set_target():
+        return 
+
     def load_classes():
         return 
 
     def load_val():
         return
 
-class DatasetLoader(DataLoader):
-    def __init__(self, path):
-        self.No2ID = [0]
-        self.ID2No = [0]
-
-    def load_train():
+    def load_all():
         return
 
 class ImageNetClassesLoader(DataLoader):
@@ -40,6 +37,7 @@ class ImageNetClassesLoader(DataLoader):
             classes.append([temp[0],temp[-1]])
         return classes
     
+    # dataset ILSVRC2012, with "synset_words.txt" contains all classes name to load training set.
     def __init__(self,preprocess_input = None,targetNos = None,path = '/dataset/ILSVRC2012',label_path = "synset_words.txt",useqload = True,target_size = [224,224],package="torch"):
         self.path = path
         self.label_path = label_path
@@ -411,64 +409,12 @@ class CUBBirdClassesLoader(DataLoader):
             return (X,y),(tX,ty)
     
 
-class DatasetLoader(DataLoader):
-    #default for flower set
-    def __init__(self,
-                 num_classes = 17,
-                 size = (224,224),
-                 channel = 3,
-                 path =  "/dataset/17flowers/17flowers/"):
-        
-        self.num_classes = num_classes
-        self.size = size
-        self.channel = channel
-
-        self.X = np.load(path + "X.npy")
-        self.tX = np.load(path + "tX.npy")
-        self.y = np.load(path + "y.npy")
-        self.ty = np.load(path + "ty.npy")
-
-        self.Name2ID = list(range(self.num_classes))
-        self.ID2Name = list(range(self.num_classes))
-        self.No2ID = list(range(self.num_classes))
-        self.ID2No = list(range(self.num_classes))
-        self.Name2No = list(range(self.num_classes))
-        self.No2Name = list(range(self.num_classes))
-
-    def load_train(self,Nos=[0]):
-
-        if not type(Nos) == list:
-            Nos = [Nos]
-        print ("totally {} classes".format(len(Nos)))
-        for i,No in enumerate(Nos):
-            idx = np.where(self.y==No)
-            x = self.X[idx]
-            y = self.y[idx]
-            yield (No,x,y)
-
-        
-    def load_val(self, Nos=[0]):
-        if not type(Nos) == list:
-            Nos = [Nos]
-        dataset_x = []
-        dataset_y = []
-        for i, No in enumerate(Nos):
-            idx = np.where(self.ty==No)
-            dataset_x.append(self.tX[idx])
-            dataset_y.append(self.ty[idx])
-        #dataset_x = np.concatenate(dataset_x)
-        #dataset_y = np.concatenate(dataset_y)
-        return dataset_x,dataset_y
-
-    def load_all(self):
-        return (self.X,self.y),(self.tX,self.ty)
-
 
 
 class MNISTLoader(DataLoader):
 
     
-    def __init__(self,channel_first = False):
+    def __init__(self,channel_first = False,root = "/dataset"):
         self.classNum = 10
         self.Channel = 1
         self.img_rows = 28
@@ -479,7 +425,13 @@ class MNISTLoader(DataLoader):
         img_rows = self.img_rows
         img_cols = self.img_cols 
         
-        (X,y),(tX,ty) = keras.datasets.mnist.load_data()
+        #(X,y),(tX,ty) = keras.datasets.mnist.load_data()
+        data_train = dset.MNIST(root = root, train = True,  download = True)
+        X,y = data_train.data.numpy() , data_train.targets.numpy()
+
+        data_test = dset.MNIST(root=root, train = False)
+        tX,ty = data_test.data.numpy() , data_test.targets.numpy()
+
         
         X = X.reshape(X.shape[0], img_rows, img_cols, Channel)
         tX = tX.reshape(tX.shape[0], img_rows, img_cols, Channel)
@@ -492,8 +444,11 @@ class MNISTLoader(DataLoader):
         tX = tX - tX.min()
         tX = tX / tX.max()
         
-        y = keras.utils.to_categorical(y,classNum)
-        ty = keras.utils.to_categorical(ty,classNum)
+        #y = keras.utils.to_categorical(y,classNum)
+        #ty = keras.utils.to_categorical(ty,classNum)
+
+        y = np.eye(classNum, dtype='uint8')[y]
+        ty = np.eye(classNum, dtype='uint8')[ty]
 
         if channel_first:
             X = np.transpose(X,(0,3,1,2))

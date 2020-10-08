@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import os
 from tqdm import tqdm
 from skimage.transform import resize
-import keras
 
 
 #npdir = '/dataset/ILSVRC2012/nparray_train'
@@ -42,15 +41,6 @@ class utils():
         self.mean = mean
         self.img_format = img_format
         self.mode = mode
-
-    def preprocessing(self,X, **kwargs):
-        if self.img_format == "channels_first":
-            if X.ndim == 3:
-                X = np.transpose(X,(2,0,1))
-            else:
-                X = np.transpose(X,(0,3,1,2))
-        return keras.applications.keras_applications.imagenet_utils.preprocess_input(X, mode=self.mode, data_format=self.img_format, **kwargs)
-        
 
 
     def deprocessing(self,x):

@@ -3,3 +3,6 @@ data
 *.pickle
 __pycache__
 dataset/
+Explainers/
+
+*.jpg

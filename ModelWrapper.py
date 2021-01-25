@@ -26,9 +26,9 @@ class ModelWrapper:
         pass
     def target_value(self,x):
         pass
-    
 
-class PytorchModelWrapper(ModelWrapper):   
+
+class PytorchModelWrapper(ModelWrapper):
     def __init__(self,
                  model,
                  layer_dict = {},

@@ -70,20 +70,26 @@ class Explainer():
         
     def load(self):
         title = self.title
-        with open("Explainers"+"/"+title+"/"+title+".pickle","rb") as f:
+        pickle_source = os.path.join("./Explainers", title, title+".pickle")
+
+        with open(pickle_source,"rb") as f:
             tdict = pickle.load(f)
             self.__dict__.update(tdict)
             
     def save(self):
-        if not os.path.exists("Explainers"):
-            os.mkdir("Explainers")
+        if not os.path.exists("./Explainers"):
+            os.mkdir("./Explainers")
+        
         title = self.title
-        if not os.path.exists("Explainers"+"/"+title):
-            os.mkdir("Explainers"+"/"+title)
-        with open("Explainers"+"/"+title+"/"+title+".pickle","wb") as f:
+        explainer_source = os.path.join("./Explainers", title)
+        if not os.path.exists(explainer_source):
+            os.mkdir(explainer_source)
+        
+        save_path = os.path.join("./Explainers", title, title+".pickle")
+        with open(save_path, "wb") as f:
             pickle.dump(self.__dict__,f)
 
-    def train_model(self,model,classesLoader):
+    def train_model(self, model, classesLoader):
         if self.best_n:
             print ("search for best n.")
             self.n_components = self.min_step
@@ -91,31 +97,36 @@ class Explainer():
             while train_count < TRAIN_LIMIT:
                 print ("try n_component with {}".format(self.n_components))
                 self.reducer = None
-                self._train_reducer(model,classesLoader)
+                self._train_reducer(model, classesLoader)
+
                 if self.reducer_err.mean() < self.target_err:
                     self._estimate_weight(model,classesLoader)
                     return 
+
                 self.n_components += self.min_step
                 train_count += 1
         else:
             self._train_reducer(model,classesLoader)
             self._estimate_weight(model,classesLoader)
 
-    def _train_reducer(self,model,classesLoader):
+    def _train_reducer(self, model, classesLoader):
         X_feature = []
 
         print ("Training reducer:")
         print ("Loading data")
 
         if self.reducer is None:
+
             if self.reducer_type == "Cluster":
                 self.reducer = ClusterReducer(n_clusters = self.n_components)
             elif self.reducer_type == "NMF":
                 if len(self.classesNos) == 1 and USE_TRAINED_REDUCER:
-                    target_path = REDUCER_PATH + "/{}/{}.pickle".format(self.layer_name,self.classesNos[0])
+                    target_path = os.path.join(REDUCER_PATH, self.layer_name, self.classesNos[0]+'.pickle')
+
                     if os.path.exists(target_path):
-                        with open(target_path,"rb") as f:
+                        with open(target_path, "rb") as f:
                             reducers = pickle.load(f)
+
                         if self.n_components in reducers:
                             self.reducer = reducers[self.n_components]['reducer']
                             print ("Reducer loaded")
@@ -123,10 +134,10 @@ class Explainer():
                 if self.reducer is None:
                     self.reducer = ChannelReducer(n_components = self.n_components)
             else:
-                self.reducer = ChannelReducer(n_components = self.n_components,reduction_alg = self.reducer_type)
+                self.reducer = ChannelReducer(n_components = self.n_components, reduction_alg = self.reducer_type)
 
 
-        for No,X,y in tqdm(classesLoader.load_train(self.classesNos)):
+        for No, X, y in tqdm(classesLoader.load_train(self.classesNos)):
             featureMaps = model.get_feature(X,self.layer_name)
             X_feature.append(featureMaps)
         #X_feature = np.concatenate(X_feature)
@@ -201,7 +212,7 @@ class Explainer():
         self.test_weight = np.array(self.test_weight)
 
     def save_features(self,threshold=0.5,background = 0.2,smooth = True):
-        feature_path = "Explainers/"+self.title + "/feature_imgs"
+        feature_path = "./Explainers/"+self.title + "/feature_imgs"
         utils = self.utils
 
         if not os.path.exists(feature_path):
@@ -307,7 +318,7 @@ class Explainer():
 
     def generate_image_LR_file(self,classesLoader):        
         title = self.title
-        fpath = os.getcwd() + "\\Explainers\\"+ self.title + "\\feature_imgs\\"
+        fpath = os.getcwd() + "/Explainers/"+ self.title + "/feature_imgs/"
         featopk = min(self.featuretopk,self.n_components)
         imgtopk = self.featureimgtopk
         classes = classesLoader
@@ -354,16 +365,16 @@ class Explainer():
 
             return resstr
 
-        if not os.path.exists("Explainers/"+title+"/GE"):
-            os.mkdir("Explainers/"+title+"/GE")
+        if not os.path.exists("./Explainers/"+title+"/GE"):
+            os.mkdir("./Explainers/"+title+"/GE")
                     
         print ("Generate explanations with fullset condition")
 
         for i,No in tqdm(enumerate(Nos)):
             wlist = [(j,fw[j][i]) for j in fw[:,i].argsort()[-featopk:]]
             graph = pydotplus.graph_from_dot_data(LR_graph(wlist,No))  
-            if not os.path.exists("Explainers/"+title+"/GE/{}.jpg".format(No)):
-                graph.write_jpg("Explainers/"+title+"/GE/{}.jpg".format(No))
+            if not os.path.exists("./Explainers/"+title+"/GE/{}.jpg".format(No)):
+                graph.write_jpg("./Explainers/"+title+"/GE/{}.jpg".format(No))
                 
 
 
@@ -393,15 +404,15 @@ class Explainer():
 
         pred = model.predict(np.array([x]))[0][target_classes]
 
-        if not os.path.exists("Explainers/"+self.title + "/explanations"):
-            os.mkdir("Explainers/"+self.title + "/explanations")
+        if not os.path.exists("./Explainers/"+self.title + "/explanations"):
+            os.mkdir("./Explainers/"+self.title + "/explanations")
 
-        if not os.path.exists("Explainers/"+self.title + "/explanations/all"):
-            os.mkdir("Explainers/"+self.title + "/explanations/all")
+        if not os.path.exists("./Explainers/"+self.title + "/explanations/all"):
+            os.mkdir("./Explainers/"+self.title + "/explanations/all")
 
-        fpath = "Explainers/"+self.title + "/explanations/{}"
+        fpath = "./Explainers/"+self.title + "/explanations/{}"
 
-        afpath = "Explainers/"+self.title + "/explanations/all/"
+        afpath = "./Explainers/"+self.title + "/explanations/all/"
 
         if name is not None:
             if not os.path.exists(fpath.format(name)):
@@ -444,8 +455,8 @@ class Explainer():
             fig.savefig(fpath.format(k)) 
             plt.close()
 
-        fpath = os.getcwd() + "\\Explainers\\"+ self.title + "\\feature_imgs\\"
-        spath = os.getcwd() + "\\Explainers\\"+ self.title + "\\explanations\\{}\\".format(name)
+        fpath = os.getcwd() + "/Explainers/"+ self.title + "/feature_imgs/"
+        spath = os.getcwd() + "/Explainers/"+ self.title + "/explanations/{}/".format(name)
         def node_string(fidx,score,weight):
             
             

@@ -6,3 +6,4 @@ dataset/
 Explainers/
 
 *.jpg
+.vscode/settings.json

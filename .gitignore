@@ -1,6 +1,7 @@
 .ipynb_checkpoints
 data
 *.pickle
+temp.*
 __pycache__
 Explainers
 Samples

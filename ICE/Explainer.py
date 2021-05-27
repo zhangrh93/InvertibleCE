@@ -8,14 +8,10 @@ import ICE.ChannelReducer as ChannelReducer
 import os
 import pickle
 
-import graphviz
 import pydotplus
-
-import scipy
 
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 import time
 
 

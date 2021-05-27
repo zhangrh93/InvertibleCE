@@ -9,7 +9,6 @@
 import numpy as np
 import os
 
-from numpy.lib.function_base import percentile
 import torch
 from torch.utils.data import TensorDataset,DataLoader
 

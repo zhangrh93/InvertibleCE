@@ -9,7 +9,6 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from tqdm import tqdm
 from skimage.transform import resize
 
 

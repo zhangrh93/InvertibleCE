@@ -18,24 +18,25 @@ from skimage.transform import resize
 
 mean = [103.939, 116.779, 123.68]
 SIZE = [224,224]
+EPSILON = 1e-8
 
-
-class utils():
+class img_utils():
 
     def __init__(self,
-                img_size = (224,224,3),
+                img_size = (224,224),
+                nchannels = 3,
                 img_format = "channels_last",
                 mode = None,
                 std = None,
                 mean = None):
-        self.img_size = list(img_size)
         self.img_format = img_format
-        if img_format == "channels_last":
-            self.nchannels = self.img_size[2]
-            self.fsize = self.img_size[0:2]
-        else:
-            self.nchannels = self.img_size[0]
-            self.fsize = self.img_size[1:3]
+        self.nchannels = nchannels
+        self.fsize = list(img_size)
+        self.img_size = self.fsize + [self.nchannels]
+        #if img_format == 'channels_first':
+        #    self.img_size = [self.nchannels] + self.fsize
+        #else:
+        #    self.img_size = self.fsize + [self.nchannels]
         
         self.std = std
         self.mean = mean
@@ -45,7 +46,6 @@ class utils():
 
     def deprocessing(self,x):
         mode = self.mode
-        img_format = self.img_format
         x = np.array(x)
         X = x.copy()
 
@@ -115,7 +115,7 @@ class utils():
         size = array.shape
         return array.reshape(-1,size[-1])  
 
-    def show_img(self,X,nrows=1,ncols=1,heatmaps = None,useColorBar = True, deprocessing = True):
+    def show_img(self,X,nrows=1,ncols=1,heatmaps = None,useColorBar = True, deprocessing = True, save_path = None):
         X = np.array(X)
         if not heatmaps is None:
             heatmaps = np.array(heatmaps)
@@ -156,7 +156,11 @@ class utils():
                     plt.imshow(heapmap, cmap='jet', alpha=0.5,interpolation = "bilinear")
                     if useColorBar:
                         plt.colorbar()
+
+        if save_path is not None:
+            plt.savefig(save_path)
         plt.show()   
+        
 
     def img_filter(self,x,h,threshold=0.5,background = 0.2,smooth = True, minmax = False):
         x = x.copy()
@@ -167,7 +171,7 @@ class utils():
 
         h = h * (h>0)
         for i in range(h.shape[0]):
-            h[i] = h[i] / h[i].max()
+            h[i] = h[i] / (h[i].max() + EPSILON)
 
         h = (h - threshold) * (1/(1-threshold))
         
@@ -175,35 +179,16 @@ class utils():
 
         h = self.resize_img(h,smooth = smooth)
         h = ((h>0).astype("float")*(1-background) + background)
-        x = x * np.repeat(h,self.nchannels).reshape(list(h.shape)+[-1])
+        h_mask = np.repeat(h,self.nchannels).reshape(list(h.shape)+[-1])
+        if self.img_format == 'channels_first':
+            h_mask = np.transpose(h_mask,(0,3,1,2))
+        x = x * h_mask
+        
         h = h - h.min()
-        h = h / h.max()
+        h = h / (h.max() + EPSILON)
         
         return x,h
 
-    def train_reducer(self,Nos,classLoader,model,layer_name,n_component,p):
-        print ("Reducer training for classes :{}".format(Nos))
-        print ("p:{} n_conponent:{}".format(p,n_component))
-        
-        w,b = model.model.layers[-1].get_weights()
-        train_x = []
-        for No,X,y in classesLoader.load_train(classNos):
-            tx = model.get_feature(X,layer_name=layer_name)
-        
-            idx = np.dot(tx.mean(axis = (1,2)),w)[:,No].argsort()[::-1][:int(tx.shape[0]*p)]
-            ntx = tx[idx]
-            train_xs[p].append(ntx.reshape([-1,ntx.shape[-1]]))
-
-        train_x = np.concatenate(train_x)
-            
-        rdict = {}
-        print ("shape:{}".format(train_xs[p].shape))
-        print ("n_component:{}".format(n_component))
-        reducer = ChannelReducer(n_component,solver = "cd")
-        reducer.fit(train_x)
-        rdict[(layer_name,n_component)] = res_ana(classNos,reducer,layer_name)
-        
-        return rdict
 
     def contour_img(self,x,h,dpi = 100):
         dpi = float(dpi)

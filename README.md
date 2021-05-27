@@ -9,11 +9,12 @@ Two notebooks for MNIST and ImageNet could help you with this tool.
 
 ## Usage
 
-### **You need to install graphviz for explanation visualization. It could not be installed with pip or conda.**
+**You need to install graphviz for explanation visualization. It could not be installed with pip or conda.**
 
-It's a pytorch based implement, GPU support are assumed. All dependent packages are included in requirements.txt
+It's a pytorch based implement. All dependent packages are included in requirements.txt
 
     pip install -r requirements.txt
 
 ## Explanation examples
 
+![Husky explanation](https://github.com/zhangrh93/InvertibleCE/blob/main/Examples/248%20Eskimo%20dog%2C%20husky.jpg)

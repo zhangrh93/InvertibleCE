@@ -96,7 +96,7 @@ class ChannelDecompositionReducer(object):
 
 class ChannelClusterReducer(object):
 
-    def __init__(self, n_components=3, reduction_alg="MiniBatchKMeans", **kwargs):
+    def __init__(self, n_components=3, reduction_alg="KMeans", **kwargs):
 
 
         if not isinstance(n_components, int):
@@ -116,7 +116,7 @@ class ChannelClusterReducer(object):
 
 
         self.n_components = n_components
-        self._reducer = reduction_alg(n_components=n_components, **kwargs)
+        self._reducer = reduction_alg(n_clusters=n_components, **kwargs)
         self._is_fit = False
 
     def _apply_flat(self, f, acts):
@@ -143,21 +143,21 @@ class ChannelClusterReducer(object):
 
     def fit(self, acts):
         if hasattr(self._reducer,'partial_fit'):
-            res = ClusterReducer._apply_flat(self,self._reducer.partial_fit, acts)
+            res = self._apply_flat(self._reducer.partial_fit, acts)
         else:
-            res = ClusterReducer._apply_flat(self,self._reducer.fit, acts)
+            res = self._apply_flat(self._reducer.fit, acts)
         self._reducer.components_ = self._reducer.cluster_centers_
         self._is_fit = True
         return res
 
     def fit_predict(self, acts):
-        res = ClusterReducer._apply_flat(self,self._reducer.fit_predict, acts)
+        res = self._apply_flat(self._reducer.fit_predict, acts)
         self._reducer.components_ = self._reducer.cluster_centers_
         self._is_fit = True
         return res
 
     def transform(self, acts):
-        res = ClusterReducer._apply_flat(self,self._reducer.predict, acts)
+        res = self._apply_flat(self._reducer.predict, acts)
         return res
 
     def inverse_transform(self, acts):

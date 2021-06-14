@@ -7,8 +7,6 @@ __pycache__
 Explainers
 Samples
 .vscode
-<<<<<<< HEAD
 temp*
 dataset
-=======
->>>>>>> reimp
+model

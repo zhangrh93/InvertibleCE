@@ -6,6 +6,7 @@ import ICE.ModelWrapper as ModelWrapper
 import ICE.ChannelReducer as ChannelReducer
 
 import os
+from pathlib import Path
 import pickle
 
 import pydotplus
@@ -58,21 +59,23 @@ class Explainer():
         self.feature_base = []
         self.features = {}
 
+        self.exp_location = Path('Explainers')
+
         self.font = FONT_SIZE
         
     def load(self):
         title = self.title
-        with open(os.path.join("Explainers",title,title+".pickle"),"rb") as f:
+        with open(self.exp_location / title / (title+".pickle"),"rb") as f:
             tdict = pickle.load(f)
             self.__dict__.update(tdict)
             
     def save(self):
-        if not os.path.exists("Explainers"):
-            os.mkdir("Explainers")
+        if not os.path.exists(self.exp_location):
+            os.mkdir(self.exp_location)
         title = self.title
-        if not os.path.exists(os.path.join("Explainers",title)):
-            os.mkdir(os.path.join("Explainers",title))
-        with open(os.path.join("Explainers",title,title+".pickle"),"wb") as f:
+        if not os.path.exists(self.exp_location / title):
+            os.mkdir(self.exp_location / title)
+        with open(self.exp_location / title / (title+".pickle"),"wb") as f:
             pickle.dump(self.__dict__,f)
 
     def train_model(self,model,loaders):
@@ -100,10 +103,9 @@ class Explainer():
 
         if not self.reducer._is_fit:
             nX_feature = np.concatenate(X_features)
-            total = np.product(nX_feature.shape)# / nX_feature.shape
+            total = np.product(nX_feature.shape)
             l = nX_feature.shape[0]
-            if total > CALC_LIMIT:# * len(self.class_names):
-                #p = CALC_LIMIT * len(self.class_names) / total
+            if total > CALC_LIMIT:
                 p = CALC_LIMIT / total
                 print ("dataset too big, train with {:.2f} instances".format(p))
                 idx = np.random.choice(l,int(l*p),replace = False)
@@ -276,7 +278,7 @@ class Explainer():
         return inter_dict
 
     def _save_features(self,threshold=0.5,background = 0.2,smooth = True):
-        feature_path = os.path.join("Explainers",self.title,"feature_imgs")
+        feature_path = self.exp_location / self.title / "feature_imgs"
         #utils = self.utils
 
         if not os.path.exists(feature_path):
@@ -304,12 +306,12 @@ class Explainer():
                 nimg[:,i*self.utils.img_size[1]:(i+1)*self.utils.img_size[1],:] = timg
                 nh[:,i*self.utils.img_size[1]:(i+1)*self.utils.img_size[1]] = h[i]
             fig = self.utils.contour_img(nimg,nh)
-            fig.savefig(os.path.join(feature_path,str(idx)+".jpg"),bbox_inches='tight',pad_inches=0)
+            fig.savefig(feature_path / (str(idx)+".jpg"),bbox_inches='tight',pad_inches=0)
             plt.close(fig)
 
     def global_explanations(self):        
         title = self.title
-        fpath = os.path.join(os.getcwd() , "Explainers", self.title , "feature_imgs")
+        fpath = (self.exp_location / self.title / "feature_imgs").absolute()
         feature_topk = min(self.featuretopk,self.n_components)
         feature_weight = self.test_weight
         class_names = self.class_names
@@ -323,7 +325,7 @@ class Explainer():
                 nodestr += "{} [label=< <table border=\"0\">".format(count)
 
                 nodestr+="<tr>"
-                nodestr+="<td><img src= \"{}\" /></td>".format(os.path.join(fpath,"{}.jpg".format(fidx))) 
+                nodestr+="<td><img src= \"{}\" /></td>".format(str(fpath / ("{}.jpg".format(fidx)))) 
                 nodestr+="</tr>"
 
 
@@ -341,7 +343,6 @@ class Explainer():
             count = len(wlist)
             for k,v in wlist:
                 resstr+=node_string(count,k,v,No)
-                #print (count,k,v)
                 count-=1
             
             resstr += "0 [label=< <table border=\"0\">" 
@@ -355,15 +356,15 @@ class Explainer():
 
             return resstr
 
-        if not os.path.exists(os.path.join("Explainers",title,"/GE")):
-            os.mkdir(os.path.join("Explainers",title,"/GE"))
+        if not os.path.exists(self.exp_location / title / "GE"):
+            os.mkdir(self.exp_location / title / "GE")
                     
         print ("Generate explanations with fullset condition")
 
         for i in Nos:
             wlist = [(j,feature_weight[j][i]) for j in feature_weight[:,i].argsort()[-feature_topk:]]
             graph = pydotplus.graph_from_dot_data(LR_graph(wlist,i))  
-            graph.write_jpg(os.path.join("Explainers",title,"GE","{}.jpg".format(class_names[i])))
+            graph.write_jpg(str(self.exp_location / title / "GE" / ("{}.jpg".format(class_names[i]))))
  
     def local_explanations(self,x,model,background = 0.2,name = None,with_total = True,display_value = True):
         utils = self.utils
@@ -375,32 +376,32 @@ class Explainer():
 
         pred = model.predict(x)[0][target_classes]
         
-        fpath = os.path.join("Explainers",self.title,"explanations")
+        fpath = self.exp_location / self.title / "explanations"
 
         if not os.path.exists(fpath):
             os.mkdir(fpath)
 
-        afpath = os.path.join("Explainers",self.title,"explanations","all")
+        afpath = fpath / "all"
 
         if not os.path.exists(afpath):
             os.mkdir(afpath)
 
-        fpath = os.path.join(fpath,"{}")
 
         if name is not None:
-            if not os.path.exists(fpath.format(name)):
-                os.mkdir(fpath.format(name))
+            fpath = fpath / name
+            if not os.path.exists(fpath):
+                os.mkdir(fpath)
             else:
                 print ("Folder exists")
                 return 
         else:
             count = 0
-            while os.path.exists(fpath.format(count)):
+            while os.path.exists(fpath / str(count)):
                 count+=1
-            os.mkdir(fpath.format(count))
+            fpath = fpath / str(count)
+            os.mkdir(fpath)
             name = str(count)
 
-        fpath =  os.path.join(fpath.format(name),"feature_{}.jpg") 
 
         if self.reducer is not None:
             h = self.reducer.transform(model.get_feature(x,self.layer_name))[0]
@@ -427,19 +428,19 @@ class Explainer():
             x1 = x1 / x1.max()
             x1 = abs(x1)
             fig = utils.contour_img(x1[0],h1[0])
-            fig.savefig(fpath.format(k)) 
+            fig.savefig(fpath / ("feature_{}.jpg".format(k)))
             plt.close()
 
-        spath = os.path.join(os.getcwd(), "Explainers", self.title, "explanations", "{}".format(name))
-        fpath = os.path.join(os.getcwd(), "Explainers", self.title, "feature_imgs")
+        fpath = fpath.absolute()
+        gpath = self.exp_location.absolute() / self.title / 'feature_imgs'
         def node_string(fidx,score,weight):
             
             
             nodestr = ""
             nodestr += "<table border=\"0\">\n"
             nodestr+="<tr>"
-            nodestr+="<td><img src= \"{}\" /></td>".format(os.path.join(spath, "feature_{}.jpg".format(fidx)))
-            nodestr+="<td><img src= \"{}\" /></td>".format(os.path.join(fpath, "{}.jpg".format(fidx)))
+            nodestr+="<td><img src= \"{}\" /></td>".format(str(fpath / ("feature_{}.jpg".format(fidx))))
+            nodestr+="<td><img src= \"{}\" /></td>".format(str(gpath / ("{}.jpg".format(fidx))))
             nodestr+="</tr>\n"
             if display_value:
                 nodestr +="<tr><td colspan=\"2\"><FONT POINT-SIZE=\"{}\"> ClassName: {}, Feature: {}</FONT></td></tr>\n".format(font,self.class_names[cidx],fidx)
@@ -473,5 +474,5 @@ class Explainer():
             resstr += "}"
 
             graph = pydotplus.graph_from_dot_data(resstr)  
-            graph.write_jpg(os.path.join(spath, "explanation_{}.jpg".format(cidx)))
-            graph.write_jpg(os.path.join(afpath, "{}_{}.jpg".format(name,cidx)))
+            graph.write_jpg(str(fpath / ("explanation_{}.jpg".format(cidx))))
+            graph.write_jpg(str(afpath / ("{}_{}.jpg".format(name,cidx))))

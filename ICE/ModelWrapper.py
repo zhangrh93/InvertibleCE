@@ -43,7 +43,7 @@ class PytorchModelWrapper(ModelWrapper):
                  model_channel_first = True, #True if model use channel first
                  #switch_channel = None, #"f_to_l" or "l_to_f" if switch channel is required from loader to model
                  numpy_out = True,
-                 input_size = [3,224,224],
+                 input_size = [3,224,224], #model's input size
                  batch_size=128):#target: (layer_name,unit_nums)
 
         super().__init__(model,batch_size)
@@ -55,6 +55,8 @@ class PytorchModelWrapper(ModelWrapper):
         self.numpy_out = numpy_out
         self.input_size = list(input_size)
         
+        self.non_negative = False
+
         self.CUDA = torch.cuda.is_available()
 
     def _to_tensor(self,x):
@@ -150,6 +152,9 @@ class PytorchModelWrapper(ModelWrapper):
         for handle in handles:
             handle.remove() 
 
+        if self.non_negative:
+            data_out = torch.relu(data_out)
+
         return data_out
 
     def _batch_fn(self,x,layer_in = "input",layer_out = "output"):
@@ -174,6 +179,7 @@ class PytorchModelWrapper(ModelWrapper):
         res = self._switch_channel(res,layer_in=layer_in,layer_out=layer_out,to_model=False)
         if self.numpy_out:
             res = res.detach().numpy()
+
 
         return res
 

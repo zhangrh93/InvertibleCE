@@ -39,7 +39,6 @@ class img_utils():
         
         self.std = std
         self.mean = mean
-        self.img_format = img_format
         self.mode = mode
 
 

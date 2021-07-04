@@ -9,7 +9,7 @@ It's a powerful CNN explanation framework. It learns domain related concepts bas
 ## Demo
 Two Colab jupyter notebook demos are available. In [ImageNet.ipynb](https://colab.research.google.com/github/zhangrh93/InvertibleCE/blob/main/demo/ImageNet.ipynb), you can have fun with different dog concepts and explanations from torchvision pretrained models.
 
-If you want a guide for your own model and dataset, [MNIST.ipynb](https://colab.research.google.com/github/zhangrh93/InvertibleCE/blob/main/demo/MNIST.ipynb)
+If you want a guide for your own model and dataset, have a try with [MNIST.ipynb](https://colab.research.google.com/github/zhangrh93/InvertibleCE/blob/main/demo/MNIST.ipynb).
 
 
 ## Usage

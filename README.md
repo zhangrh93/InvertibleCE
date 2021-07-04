@@ -5,7 +5,11 @@ Code for our paper [Invertible Concept-based Explanations for CNN Models with No
 
 It's a powerful CNN explanation framework. It learns domain related concepts based on given datasets and provide both global (class level) and local (instance level) explanations. Based on the paper, learned concepts could be easily understanded by human.
 
+
+## Demo
+Two Colab jupyter notebook demos are available. You can have a try
 Two notebooks for MNIST and ImageNet could help you with this tool.
+
 
 ## Usage
 

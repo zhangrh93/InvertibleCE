@@ -20,6 +20,11 @@ It's a pytorch based implement. All dependent packages are included in requireme
 
     pip install -r requirements.txt
 
+⚠️ Attention:
+The provided requirements.txt is tested and verified on Google Colab (Python 3.12, CUDA 12.x, 2025.10 environment).
+If you are running in another environment (e.g., local machine or older CUDA/Python versions),
+you may need to relax or adjust some package versions—especially for torch, torchvision, numpy, and scipy—to ensure compatibility.
+
 ## Explanation examples
 
 ![Husky explanation](https://github.com/zhangrh93/InvertibleCE/blob/main/Examples/248%20Eskimo%20dog%2C%20husky.jpg)

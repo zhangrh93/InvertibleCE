@@ -103,7 +103,7 @@ class Explainer():
 
         if not self.reducer._is_fit:
             nX_feature = np.concatenate(X_features)
-            total = np.product(nX_feature.shape)
+            total = np.prod(nX_feature.shape)
             l = nX_feature.shape[0]
             if total > CALC_LIMIT:
                 p = CALC_LIMIT / total
